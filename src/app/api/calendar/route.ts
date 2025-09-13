@@ -9,10 +9,15 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const seller = await prisma.seller.findUnique({ where: { userId: session.user.id } });
-    if (!seller?.encryptedRefresh) {
-      return NextResponse.json({ error: "Not connected" }, { status: 404 });
+    let accessToken: string | null = null;
+    if (seller?.encryptedRefresh) {
+      accessToken = await exchangeRefreshToken(seller.encryptedRefresh);
+    } else {
+      // Fallback: use the current Google account access_token from the linked account if present
+      const account = await prisma.account.findFirst({ where: { userId: session.user.id, provider: "google" } });
+      accessToken = account?.access_token ?? null;
     }
-    const accessToken = await exchangeRefreshToken(seller.encryptedRefresh);
+    if (!accessToken) return NextResponse.json({ error: "Not connected" }, { status: 404 });
     const oauth2 = new google.auth.OAuth2();
     oauth2.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: "v3", auth: oauth2 });
