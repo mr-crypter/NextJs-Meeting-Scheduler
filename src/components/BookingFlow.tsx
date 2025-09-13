@@ -9,7 +9,7 @@ function toIso(d: Date) {
 }
 
 function generateSlots(timeMinIso: string, timeMaxIso: string, busy: Busy[], slotMinutes = 30) {
-  const slots: { start: string; end: string }[] = [];
+  const slots: { start: string; end: string; isBusy: boolean }[] = [];
   const start = new Date(timeMinIso);
   const end = new Date(timeMaxIso);
 
@@ -29,7 +29,7 @@ function generateSlots(timeMinIso: string, timeMaxIso: string, busy: Busy[], slo
       const e = new Date(t + slotMinutes * 60 * 1000);
       if (s < new Date()) continue; // skip past
       const overlapsBusy = busyRanges.some(([bs, be]) => !(e.getTime() <= bs || s.getTime() >= be));
-      if (!overlapsBusy) slots.push({ start: s.toISOString(), end: e.toISOString() });
+      slots.push({ start: s.toISOString(), end: e.toISOString(), isBusy: overlapsBusy });
     }
   }
   return slots.slice(0, 200); // cap
@@ -80,8 +80,10 @@ export default function BookingFlow() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Booking failed");
       setMessage("Booked successfully. Check Appointments tab and calendars.");
-    } catch (e: any) {
-      setMessage(e.message ?? "Booking failed");
+      alert("Your meeting has been booked successfully.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Booking failed";
+      setMessage(message);
     }
   }
 
@@ -109,12 +111,26 @@ export default function BookingFlow() {
             <div className="text-sm text-gray-500">No available slots.</div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {slots.map((slot, idx) => (
-                <button key={idx} onClick={() => book(slot.start, slot.end)} className="text-left border rounded p-2 hover:bg-gray-50">
-                  <div className="font-medium">{new Date(slot.start).toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">→ {new Date(slot.end).toLocaleTimeString()}</div>
-                </button>
-              ))}
+              {slots.map((slot, idx) => {
+                const isBusy = slot.isBusy;
+                const base = "text-left border rounded p-2";
+                const availableCls = "hover:bg-gray-50 border-gray-200";
+                const busyCls = "bg-red-100 border-red-300 text-red-800 cursor-not-allowed opacity-60";
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => !isBusy && book(slot.start, slot.end)}
+                    disabled={isBusy}
+                    className={`${base} ${isBusy ? busyCls : availableCls}`}
+                    aria-disabled={isBusy}
+                    aria-label={isBusy ? "Slot unavailable (busy)" : "Book this slot"}
+                  >
+                    <div className="font-medium">{new Date(slot.start).toLocaleString()}</div>
+                    <div className="text-sm text-gray-600">→ {new Date(slot.end).toLocaleTimeString()}</div>
+                    {isBusy && <div className="text-xs mt-1">Busy</div>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

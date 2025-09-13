@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 
+type Seller = { id: string; name?: string | null; email?: string | null };
+
 export default function SellerList() {
-  const [sellers, setSellers] = useState<any[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
 
   useEffect(() => {
     fetch("/api/sellers")
       .then((res) => res.json())
-      .then((data) => setSellers(data));
+      .then((data: Seller[]) => setSellers(data));
   }, []);
 
   return (

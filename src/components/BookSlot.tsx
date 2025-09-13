@@ -18,8 +18,10 @@ export default function BookSlot({ sellerId }: { sellerId: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Booking failed");
       setMsg("Booked!");
-    } catch (e: any) {
-      setMsg(e.message ?? "Failed");
+      alert("Your meeting has been booked successfully.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed";
+      setMsg(message);
     }
   }
 

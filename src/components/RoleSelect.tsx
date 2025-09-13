@@ -19,8 +19,9 @@ export default function RoleSelect() {
       });
       if (!res.ok) throw new Error("Failed to set role");
       setMessage(`Role set to ${role}. If SELLER, sign in again to grant calendar scopes.`);
-    } catch (e: any) {
-      setMessage(e.message ?? "Failed");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed";
+      setMessage(message);
     } finally {
       setSaving(false);
     }
@@ -28,8 +29,8 @@ export default function RoleSelect() {
 
   return (
     <div className="flex items-center gap-2">
-      <button disabled={saving} onClick={() => setRole("BUYER")} className="px-3 py-2 rounded border">I'm a buyer</button>
-      <button disabled={saving} onClick={() => setRole("SELLER")} className="px-3 py-2 rounded border">I'm a seller</button>
+      <button disabled={saving} onClick={() => setRole("BUYER")} className="px-3 py-2 rounded border">I&apos;m a buyer</button>
+      <button disabled={saving} onClick={() => setRole("SELLER")} className="px-3 py-2 rounded border">I&apos;m a seller</button>
       {message && <span className="text-sm text-gray-600">{message}</span>}
     </div>
   );

@@ -50,8 +50,8 @@ export async function exchangeRefreshToken(encryptedRefresh: string) {
   const refresh = decryptString(encryptedRefresh);
   const client = getOAuthClient();
   client.setCredentials({ refresh_token: refresh });
-  const res = (await client.getAccessToken()) as any;
-  const token = (res && (res.token || res.credentials?.access_token)) as string | undefined;
+  const res = await client.getAccessToken();
+  const token = res?.token ?? (res as unknown as { credentials?: { access_token?: string } })?.credentials?.access_token;
   if (!token) throw new Error("No access token returned (check refresh token and scopes)");
   return token;
 }
@@ -71,8 +71,8 @@ export async function getFreeBusy(accessToken: string, timeMin: string, timeMax:
 export async function exchangeRawRefreshToken(refresh: string) {
   const client = getOAuthClient();
   client.setCredentials({ refresh_token: refresh });
-  const res = (await client.getAccessToken()) as any;
-  const token = (res && (res.token || res.credentials?.access_token)) as string | undefined;
+  const res = await client.getAccessToken();
+  const token = res?.token ?? (res as unknown as { credentials?: { access_token?: string } })?.credentials?.access_token;
   if (!token) throw new Error("No access token returned");
   return token;
 }

@@ -8,7 +8,7 @@ export async function GET() {
   const session = await getServerAuthSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const seller = await (prisma as any).seller.findUnique({ where: { userId: session.user.id } });
+    const seller = await prisma.seller.findUnique({ where: { userId: session.user.id } });
     if (!seller?.encryptedRefresh) {
       return NextResponse.json({ error: "Not connected" }, { status: 404 });
     }
@@ -24,8 +24,9 @@ export async function GET() {
       maxResults: 10,
     });
     return NextResponse.json({ events: res.data.items ?? [] });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "Calendar error" }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Calendar error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

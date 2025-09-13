@@ -24,8 +24,8 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        (session.user as any).id = (user as any).id;
-        (session.user as any).role = (user as any).role ?? null;
+        session.user.id = user.id as string;
+        (session.user as { role?: "seller" | "buyer" | null }).role = (user as { role?: "seller" | "buyer" | null }).role ?? null;
       }
       return session;
     },
@@ -34,10 +34,10 @@ export const authOptions: NextAuthOptions = {
     async linkAccount({ user, account }) {
       if (account?.provider === "google" && account.refresh_token) {
         const encrypted = encryptString(account.refresh_token);
-        await (prisma as any).seller.upsert({
-          where: { userId: (user as any).id },
+        await prisma.seller.upsert({
+          where: { userId: user.id as string },
           update: { encryptedRefresh: encrypted },
-          create: { userId: (user as any).id, encryptedRefresh: encrypted },
+          create: { userId: user.id as string, encryptedRefresh: encrypted },
         });
       }
     },

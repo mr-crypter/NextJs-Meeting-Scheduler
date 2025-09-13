@@ -33,13 +33,14 @@ export async function POST(req: Request) {
   if (!seller || !buyer) return NextResponse.json({ error: "Invalid users" }, { status: 400 });
 
   // Exchange refresh token for seller (if stored)
-  const sellerRecord = await (prisma as any).seller.findUnique({ where: { userId: seller.id } });
+  const sellerRecord = await prisma.seller.findUnique({ where: { userId: seller.id } });
   let sellerAccess: string | null = null;
   if (sellerRecord?.encryptedRefresh) {
     try {
       sellerAccess = await exchangeRefreshToken(sellerRecord.encryptedRefresh);
-    } catch (e: any) {
-      return NextResponse.json({ error: `Seller token exchange failed: ${e?.message ?? e}` }, { status: 500 });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return NextResponse.json({ error: `Seller token exchange failed: ${message}` }, { status: 500 });
     }
   }
 
@@ -57,15 +58,16 @@ export async function POST(req: Request) {
       const ev = await insertEvent(sellerAccess, { calendarId: 'primary', summary: summary ?? 'Meeting', start: startIso, end: endIso, attendees, createConference: true });
       eventSellerId = ev.id ?? undefined;
     }
-  } catch (e: any) {
-    return NextResponse.json({ error: `Seller event create failed: ${e?.message ?? e}` }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Seller event create failed: ${message}` }, { status: 500 });
   }
   try {
     if (buyerAccess) {
       const ev = await insertEvent(buyerAccess, { calendarId: 'primary', summary: summary ?? 'Meeting', start: startIso, end: endIso, attendees, createConference: true });
       eventBuyerId = ev.id ?? undefined;
     }
-  } catch (e: any) {
+  } catch {
     // Do not fail the whole booking if buyer calendar fails; continue
   }
 
@@ -77,7 +79,7 @@ export async function POST(req: Request) {
       end: new Date(endIso),
       eventIdSeller: eventSellerId,
       eventIdBuyer: eventBuyerId,
-    } as any,
+    },
   });
 
   return NextResponse.json(created, { status: 201 });
