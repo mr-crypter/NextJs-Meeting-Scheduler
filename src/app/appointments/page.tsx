@@ -17,7 +17,9 @@ type AppointmentDto = {
 };
 
 async function getAppointments(): Promise<AppointmentDto[]> {
-  const base = process.env.NEXT_PUBLIC_VERCEL_URL ?? "http://localhost:3000";
+  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL ?? "localhost:3000";
+  const isLocal = raw.includes("localhost") || raw.includes("127.0.0.1");
+  const base = raw.startsWith("http") ? raw : `${isLocal ? "http" : "https"}://${raw}`;
   const res = await fetch(`${base}/api/appointments`, { cache: "no-store" });
   const data = await res.json();
   return (Array.isArray(data) ? data : data.appointments) as AppointmentDto[];
