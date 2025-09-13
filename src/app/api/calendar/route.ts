@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { exchangeRefreshToken } from "@/lib/google";
 import { google } from "googleapis";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerAuthSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
@@ -18,6 +18,9 @@ export async function GET() {
       accessToken = account?.access_token ?? null;
     }
     if (!accessToken) return NextResponse.json({ error: "Not connected" }, { status: 404 });
+    const { searchParams } = new URL(req.url);
+    const timeMin = searchParams.get("timeMin") ?? new Date().toISOString();
+    const timeMax = searchParams.get("timeMax") ?? undefined;
     const oauth2 = new google.auth.OAuth2();
     oauth2.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: "v3", auth: oauth2 });
@@ -25,8 +28,9 @@ export async function GET() {
       calendarId: "primary",
       singleEvents: true,
       orderBy: "startTime",
-      timeMin: new Date().toISOString(),
-      maxResults: 10,
+      timeMin,
+      timeMax,
+      maxResults: 2500,
     });
     return NextResponse.json({ events: res.data.items ?? [] });
   } catch (error: unknown) {
